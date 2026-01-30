@@ -9,6 +9,8 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
 import streamlit as st
+import plotly.express as px
+import plotly.graph_objects as go
 
 
 def plot_co_over_time(df, title="CO(GT) Concentration Over Time"):
@@ -34,20 +36,10 @@ def plot_co_over_time(df, title="CO(GT) Concentration Over Time"):
     if plot_data.empty:
         return None
     
-    fig, ax = plt.subplots(figsize=(12, 6))
-    
-    ax.plot(plot_data['DateTime'], plot_data['CO(GT)'], 
-            linewidth=1, alpha=0.7, color='#2E8B57')
-    
-    ax.set_title(title, fontsize=16, fontweight='bold')
-    ax.set_xlabel('Date', fontsize=12)
-    ax.set_ylabel('CO(GT) Concentration (mg/m³)', fontsize=12)
-    ax.grid(True, alpha=0.3)
-    
-    # Rotate x-axis labels for better readability
-    plt.xticks(rotation=45)
-    plt.tight_layout()
-    
+    # Return a Plotly interactive line chart for CO over time
+    fig = px.line(plot_data, x='DateTime', y='CO(GT)', title=title, labels={'CO(GT)': 'CO (mg/m³)', 'DateTime': 'Date'})
+    fig.update_traces(line=dict(color='#2E8B57'))
+    fig.update_layout(hovermode='x unified', template='plotly_white')
     return fig
 
 
@@ -71,23 +63,10 @@ def plot_temperature_vs_humidity(df, title="Temperature vs Absolute Humidity"):
     if plot_data.empty:
         return None
     
-    fig, ax = plt.subplots(figsize=(10, 6))
-    
-    scatter = ax.scatter(plot_data['T'], plot_data['AH'], 
-                        alpha=0.6, c=plot_data['T'], 
-                        cmap='viridis', s=20)
-    
-    ax.set_title(title, fontsize=16, fontweight='bold')
-    ax.set_xlabel('Temperature (°C)', fontsize=12)
-    ax.set_ylabel('Absolute Humidity', fontsize=12)
-    ax.grid(True, alpha=0.3)
-    
-    # Add colorbar
-    cbar = plt.colorbar(scatter, ax=ax)
-    cbar.set_label('Temperature (°C)', fontsize=10)
-    
-    plt.tight_layout()
-    
+    # Use Plotly scatter for interactivity
+    fig = px.scatter(plot_data, x='T', y='AH', color='T', color_continuous_scale='viridis',
+                     title=title, labels={'T': 'Temperature (°C)', 'AH': 'Absolute Humidity'})
+    fig.update_layout(template='plotly_white', hovermode='closest')
     return fig
 
 
@@ -115,26 +94,13 @@ def plot_pollutant_distribution(df, pollutant='CO(GT)', title=None):
     if title is None:
         title = f"Distribution of {pollutant}"
     
-    fig, ax = plt.subplots(figsize=(10, 6))
-    
-    ax.hist(plot_data, bins=50, alpha=0.7, color='#FF6B6B', edgecolor='black')
-    
-    ax.set_title(title, fontsize=16, fontweight='bold')
-    ax.set_xlabel(f'{pollutant} Concentration', fontsize=12)
-    ax.set_ylabel('Frequency', fontsize=12)
-    ax.grid(True, alpha=0.3)
-    
-    # Add statistics text
+    # Interactive histogram with Plotly
+    fig = px.histogram(plot_data, x=plot_data, nbins=50, title=title, labels={'value': pollutant})
     mean_val = plot_data.mean()
     median_val = plot_data.median()
-    ax.axvline(mean_val, color='red', linestyle='--', 
-               label=f'Mean: {mean_val:.2f}')
-    ax.axvline(median_val, color='blue', linestyle='--', 
-               label=f'Median: {median_val:.2f}')
-    ax.legend()
-    
-    plt.tight_layout()
-    
+    fig.add_vline(x=mean_val, line_dash='dash', line_color='red', annotation_text=f'Mean: {mean_val:.2f}', annotation_position='top left')
+    fig.add_vline(x=median_val, line_dash='dash', line_color='blue', annotation_text=f'Median: {median_val:.2f}', annotation_position='top right')
+    fig.update_layout(template='plotly_white')
     return fig
 
 
@@ -161,15 +127,15 @@ def plot_correlation_heatmap(df, title="Air Quality Variables Correlation"):
     # Calculate correlation matrix
     corr_matrix = df[numeric_cols].corr()
     
-    fig, ax = plt.subplots(figsize=(12, 10))
-    
-    # Create heatmap
-    sns.heatmap(corr_matrix, annot=True, cmap='coolwarm', center=0,
-                square=True, fmt='.2f', cbar_kws={'shrink': 0.8})
-    
-    ax.set_title(title, fontsize=16, fontweight='bold')
-    plt.tight_layout()
-    
+    # Use Plotly heatmap for interactivity
+    fig = go.Figure(data=go.Heatmap(
+        z=corr_matrix.values,
+        x=corr_matrix.columns.tolist(),
+        y=corr_matrix.index.tolist(),
+        colorscale='RdBu', zmid=0,
+        colorbar=dict(lenmode='fraction', len=0.8)
+    ))
+    fig.update_layout(title=title, template='plotly_white', autosize=True)
     return fig
 
 
@@ -197,20 +163,11 @@ def plot_daily_averages(df, pollutant='CO(GT)', title=None):
     if title is None:
         title = f"Daily Average {pollutant} Concentration"
     
-    fig, ax = plt.subplots(figsize=(12, 6))
-    
-    ax.plot(daily_avg['Date'], daily_avg[pollutant], 
-            linewidth=2, marker='o', markersize=3, color='#4A90E2')
-    
-    ax.set_title(title, fontsize=16, fontweight='bold')
-    ax.set_xlabel('Date', fontsize=12)
-    ax.set_ylabel(f'Average {pollutant} Concentration', fontsize=12)
-    ax.grid(True, alpha=0.3)
-    
-    # Rotate x-axis labels
-    plt.xticks(rotation=45)
-    plt.tight_layout()
-    
+    # Interactive daily averages with Plotly
+    fig = px.line(daily_avg, x='Date', y=pollutant, title=title or f'Daily Average {pollutant}',
+          labels={'Date': 'Date', pollutant: f'Average {pollutant}'})
+    fig.update_traces(mode='lines+markers')
+    fig.update_layout(template='plotly_white', hovermode='x unified')
     return fig
 
 

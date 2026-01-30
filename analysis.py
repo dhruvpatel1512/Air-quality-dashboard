@@ -20,12 +20,15 @@ def load_data(file_path="data/AirQualityUCI.csv"):
         pd.DataFrame: Loaded dataset
     """
     try:
-        # Load data with semicolon separator
-        df = pd.read_csv(file_path, sep=';')
-        
-        # Remove empty columns (the dataset has trailing semicolons)
+        # Load data with semicolon separator, comma decimal and -200 as missing
+        df = pd.read_csv(file_path, sep=';', decimal=',', na_values=['-200'], engine='python')
+
+        # Strip whitespace from column names
+        df.columns = [str(c).strip() for c in df.columns]
+
+        # Remove empty / fully-empty columns (the dataset has trailing semicolons)
         df = df.dropna(axis=1, how='all')
-        
+
         return df
     except FileNotFoundError:
         print(f"Error: Could not find file {file_path}")
@@ -50,36 +53,39 @@ def clean_data(df):
     
     # Create a copy to avoid modifying the original
     df_clean = df.copy()
-    
-    # Replace -200 values (missing data indicator) with NaN
+
+    # Normalize column names
+    df_clean.columns = [str(c).strip() for c in df_clean.columns]
+
+    # Ensure the -200 missing marker (if any) is NaN
     df_clean = df_clean.replace(-200, np.nan)
-    
-    # Convert date and time columns
-    df_clean['Date'] = pd.to_datetime(df_clean['Date'], format='%d/%m/%Y')
-    df_clean['Time'] = pd.to_datetime(df_clean['Time'], format='%H.%M.%S').dt.time
-    
-    # Create datetime column for easier time series analysis
-    # Only create DateTime for rows where both Date and Time are valid
-    valid_datetime_mask = df_clean['Date'].notna() & df_clean['Time'].notna()
-    df_clean['DateTime'] = pd.NaT
-    
-    if valid_datetime_mask.any():
-        df_clean.loc[valid_datetime_mask, 'DateTime'] = pd.to_datetime(
-            df_clean.loc[valid_datetime_mask, 'Date'].astype(str) + ' ' + 
-            df_clean.loc[valid_datetime_mask, 'Time'].astype(str)
-        )
-    
-    # Convert numeric columns, handling comma as decimal separator
-    numeric_columns = ['CO(GT)', 'PT08.S1(CO)', 'NMHC(GT)', 'C6H6(GT)', 
-                      'PT08.S2(NMHC)', 'NOx(GT)', 'PT08.S3(NOx)', 'NO2(GT)', 
-                      'PT08.S4(NO2)', 'PT08.S5(O3)', 'T', 'RH', 'AH']
-    
+
+    # Combine Date and Time into a single DateTime column safely
+    if 'Date' in df_clean.columns and 'Time' in df_clean.columns:
+        # Create combined string and parse with the expected format; coerce errors
+        combined = df_clean['Date'].astype(str).str.strip() + ' ' + df_clean['Time'].astype(str).str.strip()
+        df_clean['DateTime'] = pd.to_datetime(combined, format='%d/%m/%Y %H.%M.%S', dayfirst=True, errors='coerce')
+
+        # Also keep a parsed Date column (date only)
+        df_clean['Date'] = pd.to_datetime(df_clean['Date'].astype(str).str.strip(), format='%d/%m/%Y', dayfirst=True, errors='coerce')
+
+    # Convert numeric columns, handling comma as decimal separator when present
+    numeric_columns = [
+        'CO(GT)', 'PT08.S1(CO)', 'NMHC(GT)', 'C6H6(GT)',
+        'PT08.S2(NMHC)', 'NOx(GT)', 'PT08.S3(NOx)', 'NO2(GT)',
+        'PT08.S4(NO2)', 'PT08.S5(O3)', 'T', 'RH', 'AH'
+    ]
+
     for col in numeric_columns:
         if col in df_clean.columns:
-            # Replace comma with dot for decimal separator
-            df_clean[col] = df_clean[col].astype(str).str.replace(',', '.')
+            # Replace comma decimal separator with dot and coerce non-numeric
+            # Use regex=False for plain replace (pandas >=1.4 warns otherwise)
+            df_clean[col] = df_clean[col].astype(str).str.replace(',', '.', regex=False)
             df_clean[col] = pd.to_numeric(df_clean[col], errors='coerce')
-    
+
+    # Drop any fully-empty columns that may have remained
+    df_clean = df_clean.dropna(axis=1, how='all')
+
     return df_clean
 
 
