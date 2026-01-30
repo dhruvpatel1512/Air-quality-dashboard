@@ -5,6 +5,7 @@ This is the main application file for the UCI Air Quality Dataset dashboard.
 Students will work in teams to enhance this dashboard through Git collaboration.
 """
 
+
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
