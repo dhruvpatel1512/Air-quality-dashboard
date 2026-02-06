@@ -49,6 +49,7 @@ st.markdown("""
 def main():
     """Main application function."""
     
+    
     # Header
     st.markdown('<h1 class="main-header">Air Quality Dashboard</h1>', 
                 unsafe_allow_html=True)
