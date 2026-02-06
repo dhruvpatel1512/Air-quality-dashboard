@@ -69,14 +69,38 @@ def main():
             return clean_data(raw_data)
         return None
     
+    # Clear Streamlit cached data to ensure latest cleaning is used (development only)
+    st.cache_data.clear()
+
     # Load data
     with st.spinner("Loading air quality data..."):
         df = load_and_clean_data()
+
     
     if df is None:
         st.error("Could not load the air quality dataset. Please check if 'data/AirQualityUCI.csv' exists.")
         return
     
+    # Data Cleaning   
+    # Convert invalid placeholders to proper nulls
+    df = df.replace(-200, pd.NA)
+
+    # Define critical columns that must exist
+    key_cols = [c for c in ['CO(GT)', 'NOx(GT)', 'T', 'AH'] if c in df.columns]
+
+    # Drop rows missing critical sensor values
+    df = df.dropna(subset=key_cols)
+
+    # Fill remaining numeric nulls EXCEPT target pollutants (to avoid skewing distributions)
+    exclude_cols = [c for c in ['CO(GT)', 'NOx(GT)'] if c in df.columns]
+    num_cols = [c for c in df.select_dtypes(include='number').columns if c not in exclude_cols]
+
+    df[num_cols] = df[num_cols].fillna(df[num_cols].median())
+
+
+    # Treat -200 values as missing data (NaN)
+    #df = df.replace(-200, pd.NA)
+
     # Key Metrics - KPI Boxes
     st.markdown('<h2 class="section-header">Key Metrics</h2>', unsafe_allow_html=True)
     
