@@ -4,7 +4,55 @@ Air Quality Dashboard - Main Streamlit Application
 This is the main application file for the UCI Air Quality Dataset dashboard.
 Students will work in teams to enhance this dashboard through Git collaboration.
 """
+import ps:/go.microsoft.com/fwlink/?LinkID=135170.
+At line:1 char:3
++ & "C:/Users/manpr/OneDrive/Documents/My Tableau Repository/Workbooks/ ...
++   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : SecurityError: (:) [], PSSecurityException
+    + FullyQualifiedErrorId : UnauthorizedAccess
+PS C:\Users\manpr\OneDrive\Documents\My Tableau Repository\Workbooks\Air-quality-dashboard>streamlit as st
+import pandas as pd
+import matplotlib.pyplot as plt
+from analysis import load_data, clean_data, get_data_summary, calculate_air_quality_metrics
+from visualize import (plot_co_over_time, plot_temperature_vs_humidity, 
+                      plot_pollutant_distribution, plot_correlation_heatmap,
+                      plot_nox_vs_sensor, create_summary_metrics_display)
 
+# Configure the page
+st.set_page_config(
+    page_title="Air Quality Dashboard",
+    layout="wide"
+)
+
+# Custom CSS for better styling
+st.markdown("""
+<style>
+    .main-header {
+        font-size: 2.5rem;
+        color: #2E8B57;
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+    .metric-card {
+        background-color: #f0f2f6;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        border-left: 4px solid #2E8B57;
+    }
+    .section-header {
+        font-size: 1.5rem;
+        color: #2E8B57;
+        margin-top: 2rem;
+        margin-bottom: 1rem;
+        border-bottom: 2px solid #2E8B57;
+        padding-bottom: 0.5rem;
+    }
+"""
+Air Quality Dashboard - Main Streamlit Application
+
+This is the main application file for the UCI Air Quality Dataset dashboard.
+Students will work in teams to enhance this dashboard through Git collaboration.
+"""
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt

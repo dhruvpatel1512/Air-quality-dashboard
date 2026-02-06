@@ -21,11 +21,12 @@ def load_data(file_path="data/AirQualityUCI.csv"):
     """
     try:
         # Load data with semicolon separator
-        df = pd.read_csv(file_path, sep=';')
-        
+        # Treat -200 (and string "-200") as NA, and handle comma decimal separator
+        df = pd.read_csv(file_path, sep=';', na_values=[-200, '-200'], decimal=',')
+
         # Remove empty columns (the dataset has trailing semicolons)
         df = df.dropna(axis=1, how='all')
-        
+
         return df
     except FileNotFoundError:
         print(f"Error: Could not find file {file_path}")
@@ -39,11 +40,16 @@ def clean_data(df):
     """
     Clean the air quality dataset by handling missing values and data types.
     
+    This function:
+    - Treats -200 values as missing data (NaN) across all numeric columns
+    - Converts date/time columns to appropriate datetime objects
+    - Converts numeric columns and handles decimal separators
+    
     Args:
         df (pd.DataFrame): Raw dataset
         
     Returns:
-        pd.DataFrame: Cleaned dataset
+        pd.DataFrame: Cleaned dataset with -200 values replaced by NaN
     """
     if df is None:
         return None
@@ -52,11 +58,21 @@ def clean_data(df):
     df_clean = df.copy()
     
     # Replace -200 values (missing data indicator) with NaN
+    # This handles both numeric -200 and string "-200" values
     df_clean = df_clean.replace(-200, np.nan)
+    df_clean = df_clean.replace('-200', np.nan)
     
     # Convert date and time columns
     df_clean['Date'] = pd.to_datetime(df_clean['Date'], format='%d/%m/%Y')
-    df_clean['Time'] = pd.to_datetime(df_clean['Time'], format='%H.%M.%S').dt.time
+    
+    # Handle time column - it may be in HH.MM or HH.MM.SS format
+    try:
+        df_clean['Time'] = pd.to_datetime(df_clean['Time'], format='%H.%M.%S').dt.time
+    except:
+        try:
+            df_clean['Time'] = pd.to_datetime(df_clean['Time'], format='%H.%M').dt.time
+        except:
+            df_clean['Time'] = None
     
     # Create datetime column for easier time series analysis
     # Only create DateTime for rows where both Date and Time are valid
@@ -78,6 +94,8 @@ def clean_data(df):
         if col in df_clean.columns:
             # Replace comma with dot for decimal separator
             df_clean[col] = df_clean[col].astype(str).str.replace(',', '.')
+            # Convert to numeric, coercing errors to NaN
+            # This ensures any non-numeric values (including -200 in string form) become NaN
             df_clean[col] = pd.to_numeric(df_clean[col], errors='coerce')
     
     return df_clean
